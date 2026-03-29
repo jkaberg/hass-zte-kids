@@ -2,12 +2,11 @@
 
 Home Assistant custom integration for ZTE Kids watches.
 
-> [!NOTE]
-> The integration currently focuses on login, polling, device tracking, and a manual force-refresh action backed by the upstream HTTP API.
-
 ## Installation
 
 ### Option 1: HACS (Custom Repository)
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jkaberg&repository=hass-zte-kids&category=Integration)
 
 1. Open HACS -> Integrations.
 2. Open the menu (...) -> Custom repositories.
