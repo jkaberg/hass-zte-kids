@@ -1,0 +1,66 @@
+{
+  "title": "ZTE Kids",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect ZTE Kids",
+        "description": "Provide the ZTE Kids account used by themobile app.",
+        "data": {
+          "username": "Email",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Update ZTE Kids connection",
+        "description": "Update the credentials for the existing ZTE Kids account.",
+        "data": {
+          "username": "Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect ZTE Kids",
+        "description": "The ZTE Kids session for {name} was invalidated. Enter the account password to reconnect this integration.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "captcha_required": "This account currently requires an interactive captcha or verification challenge, which this integration cannot complete.",
+      "cannot_connect": "The ZTE Kids backend rejected the login or could not be reached.",
+      "unknown": "An unexpected error occurred while validating the account."
+    },
+    "abort": {
+      "already_configured": "This ZTE Kids account is already configured.",
+      "reauth_successful": "The ZTE Kids integration reauthenticated successfully.",
+      "reconfigure_successful": "The ZTE Kids integration was updated successfully.",
+      "wrong_account": "Reconfiguration must use the same ZTE Kids account as the existing entry."
+    }
+  },
+  "entity": {
+    "button": {
+      "force_refresh": {
+        "name": "Force refresh"
+      }
+    },
+    "number": {
+      "polling_interval": {
+        "name": "Polling interval"
+      }
+    },
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      },
+      "steps": {
+        "name": "Steps"
+      }
+    },
+    "switch": {
+      "polling_enabled": {
+        "name": "Polling enabled"
+      }
+    }
+  }
+}

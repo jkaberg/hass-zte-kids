@@ -1,0 +1,21 @@
+{
+  "domain": "zte_kids",
+  "name": "ZTE Kids",
+  "version": "0.1.0",
+  "documentation": "https://github.com/jkaberg/hass-zte-kids#installation",
+  "issue_tracker": "https://github.com/jkaberg/hass-zte-kids/issues",
+  "codeowners": [
+    "@jkaberg"
+  ],
+  "config_flow": true,
+  "integration_type": "hub",
+  "requirements": [
+    "cryptography>=46,<47",
+    "httpx>=0.27,<1"
+  ],
+  "iot_class": "cloud_polling",
+  "loggers": [
+    "custom_components.zte_kids",
+    "custom_components.zte_kids.sdk.http"
+  ]
+}
