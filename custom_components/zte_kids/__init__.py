@@ -3,8 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.httpx_client import get_async_client
 
+from .const import DOMAIN
 from .coordinator import ZTEKidsDataUpdateCoordinator
 from .sdk import ZTEKidsClient
 
@@ -27,6 +29,9 @@ if TYPE_CHECKING:
     ZTEKidsConfigEntry = ConfigEntry[RuntimeData]
 else:
     ZTEKidsConfigEntry = Any
+
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
