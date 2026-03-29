@@ -148,7 +148,10 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
             if self._session is None:
                 self._session = await self.client.auth.login(self.credentials)
 
-            profile = await self.client.auth.query_profile(self._session)
+            if self._latest_data is None or self._latest_data.session != self._session:
+                profile = await self.client.auth.query_profile(self._session)
+            else:
+                profile = self._latest_data.profile
             devices = await self.client.devices.list_related_devices(self._session)
             force_refresh = self._force_refresh
             self._force_refresh = False
