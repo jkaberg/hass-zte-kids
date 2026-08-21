@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant, callback
 
-from .const import EVENT_MESSAGE, EVENT_SAFE_ZONE
+from .const import PUSH_CONNECT_TIMEOUT_SECONDS, EVENT_MESSAGE, EVENT_SAFE_ZONE
 from .sdk.models import DeviceLocation
 from .sdk.mqtt import MqttBridge, MqttEvent, build_topics
 
@@ -80,7 +80,21 @@ class ZTEKidsPushManager:
         )
         await self.hass.async_add_executor_job(bridge.start, topics)
         self._bridge = bridge
-        LOGGER.debug("Event stream started on %s", topics)
+
+        # Give the broker a moment to answer. If it does not, polling simply
+        # stays at its normal rate and paho keeps retrying underneath; the
+        # cadence drops only once the stream is genuinely up.
+        connected = await self.hass.async_add_executor_job(
+            bridge.wait_connected, PUSH_CONNECT_TIMEOUT_SECONDS
+        )
+        if connected:
+            LOGGER.debug("Event stream started on %s", topics)
+        else:
+            LOGGER.warning(
+                "The ZTE Kids event stream did not connect within %ss; "
+                "continuing to poll and retrying in the background",
+                PUSH_CONNECT_TIMEOUT_SECONDS,
+            )
 
     async def async_stop(self) -> None:
         bridge, self._bridge = self._bridge, None

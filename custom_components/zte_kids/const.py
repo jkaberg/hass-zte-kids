@@ -8,7 +8,6 @@ DOMAIN = "zte_kids"
 CONF_DEVICE_POLLING = "device_polling"
 CONF_POLLING_ENABLED = "enabled"
 CONF_POLLING_INTERVAL = "interval_seconds"
-CONF_ENABLE_PUSH = "enable_push"
 PLATFORMS: list[Platform] = [
 	Platform.SENSOR,
 	Platform.BINARY_SENSOR,
@@ -51,15 +50,18 @@ STEP_GOAL_MIN = 1000
 STEP_GOAL_MAX = 50000
 
 # Real-time push is opt-in. It connects to a hard-coded third-party broker
-# whose credentials are shared by every copy of the vendor app, so it stays off
-# until the user deliberately turns it on. Polling continues either way.
+# whose credentials are shared by every copy of the vendor app. It is on by
+# default because it has been confirmed working against the live broker, and
+# it can be switched off without losing anything: polling runs underneath
+# regardless.
 CONF_ENABLE_PUSH = "enable_push"
-DEFAULT_ENABLE_PUSH = False
+DEFAULT_ENABLE_PUSH = True
 
-# Bus events fired from push notifications.
-EVENT_SAFE_ZONE = f"{DOMAIN}_safe_zone"
-EVENT_MESSAGE = f"{DOMAIN}_message"
-EVENT_SOS = f"{DOMAIN}_sos"
+# How long to wait for the broker to acknowledge a connection before carrying
+# on. Missing the deadline is not a failure - paho keeps retrying in the
+# background - it just means polling stays at full rate until the stream is
+# actually up.
+PUSH_CONNECT_TIMEOUT_SECONDS = 5.0
 
 # While the event stream is up, polling continues at this slower cadence as a
 # safety net: the broker is a third-party service that can go quiet without

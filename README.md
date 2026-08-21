@@ -141,23 +141,6 @@ data:
   number_2: "+4787654321"
 ```
 
-### Real-time updates (optional, off by default)
-
-The mobile app receives position, battery and message events over MQTT instead
-of polling for them. The integration can do the same: turn on **Real-time
-updates** in the integration's options.
-
-With it on, position and battery arrive as the watch reports them and polling
-drops to an hourly safety net. Events for messages and safe zones are fired on
-the Home Assistant bus as `zte_kids_message` and `zte_kids_safe_zone`.
-
-> [!IMPORTANT]
-> This connects to ZTE's own broker using credentials shared by every copy of
-> the app, so the connection is only as private as their topic ACLs. The
-> integration subscribes only to this account's own topics and never uses
-> wildcards. It is additive: if the broker refuses the connection or goes away,
-> the integration keeps polling over HTTP exactly as before.
-
 ## Debug logging
 
 To inspect signed API requests, responses, and polling decisions, enable debug logging for the integration loggers in Home Assistant:
@@ -175,6 +158,9 @@ What each logger shows:
 - `custom_components.zte_kids.coordinator`: polling decisions, skipped snapshot updates, and force-refresh behavior.
 - `custom_components.zte_kids.sdk.http`: outbound request method/path plus redacted query/body/header data, and redacted JSON responses.
 
+Debug logs redact secrets and personal data — tokens, SOS numbers, the
+shutdown code, coordinates and addresses are replaced, and identifiers such as
+the IMEI keep only their last four characters so lines stay correlatable.
+
 For bug reports, prefer the integration's **Download diagnostics** button on
-the config entry — it captures the same state with credentials, IMEIs and
-coordinates redacted.
+the config entry — it captures the same state with the same redaction.

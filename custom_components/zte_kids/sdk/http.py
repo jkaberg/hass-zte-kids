@@ -21,13 +21,48 @@ from .exceptions import (
 LOGGER = logging.getLogger(__name__)
 _REDACTED = "***"
 _DEFAULT_TIMEOUT = httpx.Timeout(connect=15.0, read=30.0, write=30.0, pool=30.0)
+# Replaced outright: knowing the value serves no debugging purpose and the
+# value is either a secret or personal data about a child.
 _SENSITIVE_KEYS = {
     "access_token",
     "accesstoken",
+    "addrdetail",
+    "address",
+    "address_poi",
+    "birthday",
+    "coordinate",
+    "email",
     "jigsawcode",
     "kid",
+    "lat",
+    "latitude",
+    "loginname",
+    "lon",
+    "longitude",
     "password",
+    "phone",
+    "real_name",
+    "shutdownpwd",
+    "sos1",
+    "sos2",
+    "sos3",
     "token",
+    "username",
+}
+
+# Partially masked instead: a debug log is useless if you cannot tell which
+# watch or account a line belongs to, so enough is kept to correlate lines
+# without publishing the identifier.
+_PARTIAL_KEYS = {
+    "bindno",
+    "bindurl",
+    "deviceid",
+    "esimid",
+    "groupid",
+    "imei",
+    "openid",
+    "single_groupid",
+    "singlegroupid",
 }
 
 
@@ -199,12 +234,26 @@ class SignedAsyncTransport:
         return APIEnvelope(code=code, message=message, data=data, raw=payload)
 
 
+def _mask(value: Any) -> str:
+    """Keep the last four characters so log lines stay correlatable."""
+    text = str(value)
+    if len(text) <= 4:
+        return _REDACTED
+    return f"{_REDACTED}{text[-4:]}"
+
+
+def _redact_value(key: str, value: Any) -> Any:
+    lowered = key.lower()
+    if lowered in _SENSITIVE_KEYS:
+        return _REDACTED
+    if lowered in _PARTIAL_KEYS and value is not None:
+        return _mask(value)
+    return _redact_payload(value)
+
+
 def _redact_payload(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return {
-            str(key): _REDACTED if str(key).lower() in _SENSITIVE_KEYS else _redact_payload(item)
-            for key, item in value.items()
-        }
+        return {str(key): _redact_value(str(key), item) for key, item in value.items()}
     if isinstance(value, list):
         return [_redact_payload(item) for item in value]
     if isinstance(value, tuple):

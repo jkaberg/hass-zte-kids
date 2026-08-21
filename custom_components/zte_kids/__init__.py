@@ -98,9 +98,9 @@ async def _async_start_push(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> N
     Push is strictly additive and off by default. A broker that refuses us or
     has gone away leaves the integration exactly as it was, polling over HTTP.
     """
-    from .const import CONF_ENABLE_PUSH
+    from .const import CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH
 
-    if not entry.options.get(CONF_ENABLE_PUSH, False):
+    if not entry.options.get(CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH):
         return
 
     from .push import ZTEKidsPushManager

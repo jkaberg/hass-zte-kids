@@ -136,13 +136,27 @@ class MqttBridge:
         self._last_payload: bytes | None = None
         self._last_payload_at: float = 0.0
         self._lock = threading.Lock()
+        self._connected = threading.Event()
 
     @property
     def connected(self) -> bool:
         return bool(self._client is not None and self._client.is_connected())
 
+    def wait_connected(self, timeout: float) -> bool:
+        """Block until the broker acknowledges the connection, or give up.
+
+        Returning ``False`` is not fatal: paho keeps retrying in the
+        background, and the caller keeps polling until it succeeds.
+        """
+        return self._connected.wait(timeout)
+
     def start(self, topics: Iterable[str]) -> None:
-        """Connect and subscribe. Blocking — call from an executor."""
+        """Begin connecting and subscribe once the broker answers.
+
+        Returns immediately. Connecting happens on paho's own thread so an
+        unreachable broker cannot stall Home Assistant's startup, and paho
+        retries on its own for as long as the client is alive.
+        """
         import paho.mqtt.client as mqtt
 
         self._topics = list(topics)
@@ -169,7 +183,7 @@ class MqttBridge:
         LOGGER.debug(
             "Connecting to %s:%s as %s", self._config.host, self._config.port, client_id
         )
-        client.connect(self._config.host, self._config.port, keepalive=60)
+        client.connect_async(self._config.host, self._config.port, keepalive=60)
         client.loop_start()
 
     def stop(self) -> None:
@@ -193,11 +207,13 @@ class MqttBridge:
         if self._topics:
             LOGGER.debug("Subscribing to %s", self._topics)
             client.subscribe([(topic, QOS) for topic in self._topics])
+        self._connected.set()
         if self._on_connection_change is not None:
             self._on_connection_change(True)
 
     def _handle_disconnect(self, client: Any, userdata: Any, rc: Any, *args: Any) -> None:
         LOGGER.debug("Disconnected from broker (code %s); paho will retry", rc)
+        self._connected.clear()
         if self._on_connection_change is not None:
             self._on_connection_change(False)
 

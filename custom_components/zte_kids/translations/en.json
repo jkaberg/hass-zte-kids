@@ -167,9 +167,9 @@
     "step": {
       "init": {
         "title": "ZTE Kids options",
-        "description": "Real-time updates keep an always-on connection to the vendor's message broker, so location and battery arrive as they happen instead of on the polling interval. The broker's credentials are shared by every copy of the mobile app, and it can change without notice. Polling keeps working either way.",
+        "description": "Real-time updates keep a connection open to the vendor's message broker, so location and battery arrive as they happen rather than on the polling interval. Polling continues underneath either way, so turning this off costs nothing but freshness.",
         "data": {
-          "enable_push": "Real-time updates (experimental)"
+          "enable_push": "Real-time updates"
         }
       }
     }
