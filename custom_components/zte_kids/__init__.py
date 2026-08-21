@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.helpers import config_validation as cv
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
 class RuntimeData:
     client: ZTEKidsClient
     coordinator: ZTEKidsDataUpdateCoordinator
+    push: Any = None
 
 
 if TYPE_CHECKING:
@@ -31,10 +33,17 @@ else:
     ZTEKidsConfigEntry = Any
 
 
+LOGGER = logging.getLogger(__name__)
+
+LOGGER = logging.getLogger(__name__)
+
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    from .services import async_register_services
+
+    async_register_services(hass)
     return True
 
 
@@ -66,6 +75,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> b
     )
     await coordinator.async_config_entry_first_refresh()
 
+    from .services import async_register_services
+
+    async_register_services(hass)
+
     entry.runtime_data = RuntimeData(client=client, coordinator=coordinator)
     try:
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -73,7 +86,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> b
         await coordinator.async_shutdown()
         await client.aclose()
         raise
+
+    await _async_start_push(hass, entry)
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+async def _async_start_push(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> None:
+    """Open the real-time event stream, if it is turned on.
+
+    Push is strictly additive and off by default. A broker that refuses us or
+    has gone away leaves the integration exactly as it was, polling over HTTP.
+    """
+    from .const import CONF_ENABLE_PUSH
+
+    if not entry.options.get(CONF_ENABLE_PUSH, False):
+        return
+
+    from .push import ZTEKidsPushManager
+
+    manager = ZTEKidsPushManager(hass, entry.runtime_data.coordinator)
+    try:
+        await manager.async_start()
+    except Exception as err:
+        LOGGER.warning(
+            "Could not open the ZTE Kids event stream; continuing with polling: %s",
+            err,
+        )
+        return
+
+    entry.runtime_data.push = manager
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> bool:
@@ -84,6 +130,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> 
         return False
 
     runtime_data = entry.runtime_data
+    if runtime_data.push is not None:
+        await runtime_data.push.async_stop()
+        runtime_data.push = None
     await runtime_data.coordinator.async_shutdown()
     await runtime_data.client.aclose()
     return True

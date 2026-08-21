@@ -1,0 +1,64 @@
+set_sos_numbers:
+  target:
+    device:
+      integration: zte_kids
+  fields:
+    number_1:
+      selector: { text: { type: tel } }
+      example: "+4790000000"
+    number_2:
+      selector: { text: { type: tel } }
+    number_3:
+      selector: { text: { type: tel } }
+
+set_power_off_schedule:
+  target:
+    device:
+      integration: zte_kids
+  fields:
+    enabled:
+      selector: { boolean: }
+    start_time:
+      selector: { time: }
+      example: "22:00:00"
+    end_time:
+      selector: { time: }
+      example: "06:30:00"
+
+set_shutdown_protection:
+  target:
+    device:
+      integration: zte_kids
+  fields:
+    enabled:
+      selector: { boolean: }
+    password:
+      selector: { text: { type: password } }
+      example: "1234"
+
+set_task_reminder:
+  target:
+    device:
+      integration: zte_kids
+  fields:
+    enabled:
+      selector: { boolean: }
+    time:
+      selector: { time: }
+      example: "17:00:00"
+
+set_permissions:
+  target:
+    device:
+      integration: zte_kids
+  fields:
+    location:
+      selector: { boolean: }
+    battery:
+      selector: { boolean: }
+    sms:
+      selector: { boolean: }
+    activity:
+      selector: { boolean: }
+    apps:
+      selector: { boolean: }

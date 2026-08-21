@@ -10,12 +10,30 @@ class Environment(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class MqttConfig:
+    """Broker settings for the real-time event stream.
+
+    These credentials are baked into every copy of the app and are shared by
+    all of its users, so the connection is only as private as the broker's
+    topic ACLs. Subscribe to this account's own topics and nothing else.
+    """
+
+    host: str
+    port: int
+    username: str
+    password: str
+    client_prefix: str
+    client_id_prefix: str = "GID_LKY@@@"
+
+
+@dataclass(frozen=True, slots=True)
 class EnvironmentConfig:
     name: Environment
     api_base_url: str
     app_key: str
     app_secret: str
     password_key: bytes
+    mqtt: MqttConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,5 +75,12 @@ ENVIRONMENTS: dict[Environment, EnvironmentConfig] = {
         app_key="U7yJRy5eO0DKTlNVrnx4z5ICm5y16a4S",
         app_secret="fR1gX2AEiYxflz8sVsLFzfwTOfk8NzBu",
         password_key=b"YNSSFWTeip5M2hSzmpoW4dXr0rWTc0Wr",
+        mqtt=MqttConfig(
+            host="care.nubia.com",
+            port=1883,
+            username="care_android",
+            password="WJJ3@PhC&EdG$eaf98Ae",
+            client_prefix="watchiot",
+        ),
     ),
 }

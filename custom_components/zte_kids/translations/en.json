@@ -41,12 +41,27 @@
   "entity": {
     "button": {
       "force_refresh": {
-        "name": "Force refresh"
+        "name": "Locate now"
+      },
+      "refresh_data": {
+        "name": "Refresh data"
+      },
+      "find_watch": {
+        "name": "Find watch"
+      },
+      "restart": {
+        "name": "Restart watch"
+      },
+      "power_off": {
+        "name": "Power off watch"
       }
     },
     "number": {
       "polling_interval": {
         "name": "Polling interval"
+      },
+      "step_goal": {
+        "name": "Step goal"
       }
     },
     "sensor": {
@@ -55,11 +70,199 @@
       },
       "steps": {
         "name": "Steps"
+      },
+      "location_updated": {
+        "name": "Location updated"
+      },
+      "distance": {
+        "name": "Distance today"
+      },
+      "calories": {
+        "name": "Calories today"
+      },
+      "unread_messages": {
+        "name": "Unread messages"
+      },
+      "sos_numbers": {
+        "name": "SOS numbers set"
+      },
+      "permissions": {
+        "name": "Permissions enabled"
       }
     },
     "switch": {
       "polling_enabled": {
         "name": "Polling enabled"
+      },
+      "battery_saver": {
+        "name": "Battery saver"
+      },
+      "auto_answer": {
+        "name": "Auto answer calls"
+      },
+      "call_whitelist": {
+        "name": "Call whitelist"
+      },
+      "sms_receive": {
+        "name": "Receive SMS"
+      },
+      "sms_members_only": {
+        "name": "SMS from family only"
+      },
+      "scheduled_power_off": {
+        "name": "Scheduled power off"
+      },
+      "shutdown_protection": {
+        "name": "Shutdown protection"
+      },
+      "task_reminder": {
+        "name": "Task reminder"
+      }
+    },
+    "notify": {
+      "message": {
+        "name": "Message"
+      }
+    },
+    "select": {
+      "location_mode": {
+        "name": "Location mode",
+        "state": {
+          "precision": "Precision",
+          "normal": "Normal",
+          "power_saving": "Power saving"
+        }
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_device": {
+      "message": "This ZTE Kids watch ({device_id}) is no longer in the account. Reload the integration if it was re-added."
+    },
+    "command_failed": {
+      "message": "The ZTE Kids service rejected the command for {device}: {error}"
+    },
+    "command_too_soon": {
+      "message": "A command was just sent to {device}. Wait {seconds} seconds before sending another."
+    },
+    "empty_message": {
+      "message": "The message is empty, so there is nothing to send."
+    },
+    "message_too_long": {
+      "message": "The message is {length} characters. The watch accepts at most {maximum}."
+    },
+    "schedule_incomplete": {
+      "message": "Set both ends of the power-off window before enabling it."
+    },
+    "device_offline": {
+      "message": "{device} is not reachable right now. The watch has to be switched on and have a signal for commands to arrive."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ZTE Kids options",
+        "description": "Real-time updates keep an always-on connection to the vendor's message broker, so location and battery arrive as they happen instead of on the polling interval. The broker's credentials are shared by every copy of the mobile app, and it can change without notice. Polling keeps working either way.",
+        "data": {
+          "enable_push": "Real-time updates (experimental)"
+        }
+      }
+    }
+  },
+  "services": {
+    "set_sos_numbers": {
+      "name": "Set SOS numbers",
+      "description": "Replaces the numbers the watch calls when the SOS button is held. The watch stores all three together, so this is a single change; leave a number out to keep what it is now.",
+      "fields": {
+        "number_1": {
+          "name": "First number",
+          "description": "Called first."
+        },
+        "number_2": {
+          "name": "Second number",
+          "description": "Called if the first does not answer."
+        },
+        "number_3": {
+          "name": "Third number",
+          "description": "Called last."
+        }
+      }
+    },
+    "set_power_off_schedule": {
+      "name": "Set power-off schedule",
+      "description": "Sets the window in which the watch powers itself down, in the watch's own local time. The switch and both ends are written together.",
+      "fields": {
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether the watch observes the window."
+        },
+        "start_time": {
+          "name": "Power off at",
+          "description": "When the watch shuts down."
+        },
+        "end_time": {
+          "name": "Power on at",
+          "description": "When the watch starts up again."
+        }
+      }
+    },
+    "set_shutdown_protection": {
+      "name": "Set shutdown protection",
+      "description": "Requires a 4-digit code on the watch before it will power off. The setting and the code are stored together.",
+      "fields": {
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether the code is required."
+        },
+        "password": {
+          "name": "Code",
+          "description": "Exactly four digits."
+        }
+      }
+    },
+    "set_task_reminder": {
+      "name": "Set task reminder",
+      "description": "Sets when the watch reminds the child about their tasks.",
+      "fields": {
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether the reminder runs."
+        },
+        "time": {
+          "name": "Time",
+          "description": "When the reminder fires, in the watch's local time."
+        }
+      }
+    },
+    "set_permissions": {
+      "name": "Set watch permissions",
+      "description": "Turns whole features on or off on the watch itself. Most people never need this; turning location off stops the watch reporting where it is.",
+      "fields": {
+        "location": {
+          "name": "Location",
+          "description": "Whether the watch reports its position."
+        },
+        "battery": {
+          "name": "Battery",
+          "description": "Whether the watch reports its battery level."
+        },
+        "sms": {
+          "name": "SMS",
+          "description": "Whether the watch handles text messages."
+        },
+        "activity": {
+          "name": "Activity",
+          "description": "Whether the watch counts steps."
+        },
+        "apps": {
+          "name": "Apps",
+          "description": "Whether app management is available."
+        }
       }
     }
   }

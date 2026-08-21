@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from .auth import PasswordCodec
+from .commands import Command
 from .config import ENVIRONMENTS, Environment, PlatformMetadata
 from .exceptions import (
     APIError,
@@ -17,9 +18,12 @@ from .exceptions import (
 )
 from .http import SignedAsyncTransport
 from .models import (
+    CONTENT_TYPE_TEXT,
+    USER_TYPE_ACCOUNT,
     AccountProfile,
     CaptchaAnswer,
     CaptchaChallenge,
+    ChatSession,
     Credentials,
     Device,
     DeviceSnapshot,
@@ -183,6 +187,16 @@ class DeviceAPI:
         )
         return _ensure_dict(envelope.raw)
 
+    async def query_firmware(self, session: Session, device_id: str) -> dict[str, Any]:
+        envelope = await self._transport.request(
+            "POST",
+            "api/device/upgrade",
+            token=session.access_token,
+            json_body={"deviceId": device_id},
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_dict(envelope.data)
+
     async def apply_bind(self, session: Session, request: BindRequest) -> dict[str, Any]:
         envelope = await self._transport.request(
             "POST",
@@ -243,6 +257,92 @@ class ConfigurationAPI:
             extra_headers={"Content-Type": "application/json"},
         )
 
+    async def send_command(
+        self,
+        session: Session,
+        device_id: str,
+        command: Command,
+    ) -> None:
+        """Dispatch a :class:`Command` to a device.
+
+        The server acknowledging a command means it accepted the request, not
+        that the watch executed it. Nothing here waits for the watch.
+        """
+        await self.set_system_config(
+            session,
+            device_id=device_id,
+            command_type=int(command.command_type),
+            payload=command.payload,
+        )
+
+
+class ChatAPI:
+    """Text messaging to a watch.
+
+    Two stacks exist server-side and the app uses both: newer device families
+    go through TinyChat under ``api/chat/*``, older ones through the legacy
+    gateway. Callers should try :meth:`send_text` first and fall back to
+    :meth:`send_text_legacy` when the modern path rejects the send.
+    """
+
+    def __init__(self, transport: SignedAsyncTransport) -> None:
+        self._transport = transport
+
+    async def list_sessions(self, session: Session) -> list[ChatSession]:
+        envelope = await self._transport.request(
+            "POST",
+            "api/chat/list",
+            token=session.access_token,
+            json_body={"token": session.access_token},
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _parse_chat_sessions(envelope.data)
+
+    async def send_text(
+        self,
+        session: Session,
+        chat_session: ChatSession,
+        message: str,
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {
+            "token": session.access_token,
+            "chatID": chat_session.chat_id,
+            "chatType": chat_session.chat_type,
+            "recvID": chat_session.recv_id,
+            "groupID": chat_session.group_id,
+            "userType": USER_TYPE_ACCOUNT,
+            "contentType": CONTENT_TYPE_TEXT,
+            "content": message,
+        }
+        envelope = await self._transport.request(
+            "POST",
+            "api/chat/sendmsg",
+            token=session.access_token,
+            json_body=body,
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_dict(envelope.raw)
+
+    async def send_text_legacy(
+        self,
+        session: Session,
+        device_id: str,
+        message: str,
+    ) -> dict[str, Any]:
+        envelope = await self._transport.request(
+            "POST",
+            f"getway/single/{device_id}/message",
+            token=session.access_token,
+            json_body={
+                "openid": session.openid,
+                "accesstoken": session.access_token,
+                "content": message,
+                "type": 1,
+            },
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_dict(envelope.raw)
+
 
 class LocationAPI:
     def __init__(self, transport: SignedAsyncTransport) -> None:
@@ -271,6 +371,105 @@ class LocationAPI:
         return _ensure_dict(envelope.data)
 
 
+class SportAPI:
+    """Daily activity totals and the step goal."""
+
+    def __init__(self, transport: SignedAsyncTransport) -> None:
+        self._transport = transport
+
+    async def query_daily(
+        self,
+        session: Session,
+        device_id: str,
+        *,
+        timezone_offset: int = 0,
+        timezone_name: str = "UTC",
+    ) -> list[dict[str, Any]]:
+        envelope = await self._transport.request(
+            "POST",
+            "api/sport/query/daily",
+            token=session.access_token,
+            json_body={
+                "deviceId": device_id,
+                "timeZone": timezone_offset,
+                "timezoneStr": timezone_name,
+            },
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_list(envelope.data)
+
+    async def set_aim(self, session: Session, device_id: str, aim: int) -> None:
+        await self._transport.request(
+            "POST",
+            "api/sport/aim",
+            token=session.access_token,
+            json_body={"deviceId": device_id, "aim": int(aim)},
+            extra_headers={"Content-Type": "application/json"},
+        )
+
+    async def query_aim(self, session: Session, device_id: str) -> dict[str, Any]:
+        envelope = await self._transport.request(
+            "POST",
+            "api/sport/aim",
+            token=session.access_token,
+            json_body={"deviceId": device_id},
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_dict(envelope.data)
+
+
+class GuardAPI:
+    """Safe zones ("security guard" rules)."""
+
+    def __init__(self, transport: SignedAsyncTransport) -> None:
+        self._transport = transport
+
+    async def list_rules(self, session: Session, device_id: str) -> list[dict[str, Any]]:
+        envelope = await self._transport.request(
+            "POST",
+            "api/guardrule/query",
+            token=session.access_token,
+            json_body={"imei": device_id},
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_list(envelope.data)
+
+    async def set_rule_status(
+        self,
+        session: Session,
+        *,
+        device_id: str,
+        security_guard_id: str,
+        enabled: bool,
+    ) -> None:
+        await self._transport.request(
+            "POST",
+            "api/guardrule/changeStatus",
+            token=session.access_token,
+            json_body={
+                "imei": device_id,
+                "securityGuardId": security_guard_id,
+                "status": 1 if enabled else 2,
+            },
+            extra_headers={"Content-Type": "application/json"},
+        )
+
+
+class MessageAPI:
+    def __init__(self, transport: SignedAsyncTransport) -> None:
+        self._transport = transport
+
+    async def unread_counts(self, session: Session) -> list[dict[str, Any]]:
+        envelope = await self._transport.request(
+            "POST",
+            "api/message/devicelist",
+            token=session.access_token,
+            json_body={"openid": session.openid},
+            extra_headers={"Content-Type": "application/json"},
+        )
+        return _ensure_list(envelope.data)
+
+
 class ZTEKidsClient:
     def __init__(
         self,
@@ -296,6 +495,10 @@ class ZTEKidsClient:
         self.auth = AuthAPI(self.transport, self.password_codec, self.platform)
         self.devices = DeviceAPI(self.transport)
         self.configuration = ConfigurationAPI(self.transport)
+        self.chat = ChatAPI(self.transport)
+        self.sport = SportAPI(self.transport)
+        self.guard = GuardAPI(self.transport)
+        self.messages = MessageAPI(self.transport)
         self.location = LocationAPI(self.transport)
 
     async def aclose(self) -> None:
@@ -313,10 +516,36 @@ class ZTEKidsClient:
         return session, profile, snapshots
 
 
+def _ensure_list(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        for key in ("list", "rows", "data"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+    return []
+
+
 def _ensure_dict(payload: Any) -> dict[str, Any]:
     if isinstance(payload, dict):
         return payload
     return {}
+
+
+def _parse_chat_sessions(payload: Any) -> list[ChatSession]:
+    if isinstance(payload, list):
+        return [ChatSession.from_payload(item) for item in payload if isinstance(item, dict)]
+
+    if isinstance(payload, dict):
+        for key in ("list", "rows", "sessions", "data"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [
+                    ChatSession.from_payload(item) for item in value if isinstance(item, dict)
+                ]
+
+    return []
 
 
 def _parse_related_devices(payload: Any) -> list[Device]:
