@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
 import logging
@@ -27,9 +27,12 @@ from .const import (
     DEVICE_POLLING_INTERVAL_MAX_SECONDS,
     DEVICE_POLLING_INTERVAL_MIN_SECONDS,
     DOMAIN,
+    FACET_STATUS,
+    FRESHNESS_FACETS,
     LOCATE_POLL_DELAYS_SECONDS,
-    PUSH_KEEPALIVE_POLL_SECONDS,
+    MIN_POLL_SCHEDULE_SECONDS,
     SLOW_REFRESH_SECONDS,
+    STATUS_REFRESH_SECONDS,
 )
 from .sdk import APIError, SessionExpiredError, ZTEKidsClient
 from .sdk import commands
@@ -102,7 +105,7 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
         self._session: Session | None = None
         self._latest_data: CoordinatorData | None = None
         self._device_catalog: dict[str, Device] = {}
-        self._device_last_polled_at: dict[str, float] = {}
+        self._device_fresh_at: dict[str, dict[str, float]] = {}
         self._force_refresh = False
         self._command_locks: dict[str, asyncio.Lock] = {}
         self._command_last_sent_at: dict[str, float] = {}
@@ -808,6 +811,7 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
             now = monotonic()
 
             snapshots: dict[str, DeviceSnapshot] = {}
+            polled_ids: list[str] = []
             for device in devices:
                 if not device.device_id:
                     continue
@@ -846,7 +850,9 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
                         fallback=existing_snapshot.config if existing_snapshot else {},
                     )
                     snapshots[device.device_id] = replace(related_snapshot, config=config)
-                    self._device_last_polled_at[device.device_id] = now
+                    # A poll reads the lot, so it satisfies every facet.
+                    self._mark_fresh(device.device_id, FRESHNESS_FACETS, now)
+                    polled_ids.append(device.device_id)
                 except Exception as exc:  # pragma: no cover - network boundary
                     LOGGER.debug("Failed to refresh device %s: %s", device.device_id, exc)
                     if existing_snapshot is not None:
@@ -855,17 +861,12 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
                             device=_merge_device_metadata(device, existing_snapshot.device),
                         )
 
-            polled_ids = [
-                device_id
-                for device_id in snapshots
-                if self._device_last_polled_at.get(device_id) == now
-            ]
             extras = await self._async_collect_extras(polled_ids, now=now)
 
             self._device_catalog = current_catalog
-            self._device_last_polled_at = {
-                device_id: polled_at
-                for device_id, polled_at in self._device_last_polled_at.items()
+            self._device_fresh_at = {
+                device_id: facets
+                for device_id, facets in self._device_fresh_at.items()
                 if device_id in current_catalog
             }
             data = CoordinatorData(
@@ -911,20 +912,40 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
 
     @callback
     def async_set_push_connected(self, connected: bool) -> None:
+        """Record whether the stream is up. This is diagnostic only.
+
+        Connection state deliberately has no say in polling. The broker can
+        accept a connection and then never send anything, which from here is
+        indistinguishable from a healthy stream; only data that has actually
+        arrived is allowed to move a deadline.
+        """
         if self._push_connected == connected:
             return
         self._push_connected = connected
-        # A dropped stream must fall back to the normal polling cadence.
-        self._reschedule_polling()
         self.async_update_listeners()
 
     @callback
-    def async_apply_push_snapshot(self, device_id: str, snapshot: DeviceSnapshot) -> None:
-        """Apply a pushed value straight to a device's state."""
+    def async_apply_push_snapshot(
+        self,
+        device_id: str,
+        snapshot: DeviceSnapshot,
+        *,
+        facets: tuple[str, ...],
+    ) -> None:
+        """Apply a pushed value straight to a device's state.
+
+        The event only satisfies the facets it carries; every other deadline
+        stands. Recomputing the interval before handing the data over matters,
+        because async_set_updated_data reschedules the refresh timer: doing it
+        in this order is what makes the timer land on the next deadline rather
+        than a full interval past this event.
+        """
         data = self._latest_data
         if data is None or device_id not in data.devices:
             return
         data.devices[device_id] = snapshot
+        self._mark_fresh(device_id, facets, monotonic())
+        self._update_polling_interval()
         self.async_set_updated_data(data)
 
     @callback
@@ -999,24 +1020,83 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
         if self._listeners and self.update_interval is not None:
             self._schedule_refresh()
 
-    def _polling_update_interval_seconds(self) -> int | None:
+    def facet_ages(self, device_id: str) -> dict[str, float | None]:
+        """Seconds since each facet was last current, for diagnostics.
+
+        This is the answer to "is the event stream actually delivering?" that
+        connection state cannot give: a live stream keeps the location and
+        battery ages well under the configured interval, a silent one lets
+        them climb to it and no further, because polling takes over.
+        """
+        record = self._device_fresh_at.get(device_id, {})
+        now = monotonic()
+        return {
+            facet: (now - record[facet]) if facet in record else None
+            for facet in FRESHNESS_FACETS
+        }
+
+    def _mark_fresh(self, device_id: str, facets: Iterable[str], now: float) -> None:
+        """Record that these facets of a device's state are current."""
+        record = self._device_fresh_at.setdefault(device_id, {})
+        for facet in facets:
+            record[facet] = now
+
+    def _facet_max_age(self, device_id: str, facet: str) -> float:
+        """How stale a facet may get before it has to be read again."""
+        interval = self.device_polling_interval(device_id)
+        if facet == FACET_STATUS:
+            # Nothing pushes these, and they do not need a position fix's
+            # freshness - but never read them less often than asked for.
+            return max(STATUS_REFRESH_SECONDS, interval)
+        return interval
+
+    def _staleness_deadline(self, device_id: str) -> float | None:
+        """When this device next goes stale, or None if it has never been read.
+
+        The earliest facet wins: a poll refreshes all of them, so one expired
+        facet is reason enough to go.
+        """
+        record = self._device_fresh_at.get(device_id)
+        if not record:
+            return None
+        return min(
+            record.get(facet, 0.0) + self._facet_max_age(device_id, facet)
+            for facet in FRESHNESS_FACETS
+        )
+
+    def _polling_update_interval_seconds(self) -> float | None:
+        """How long until the next facet of any device goes stale.
+
+        Polling is a deadline, not a cadence. Events that carry data push
+        their facet's deadline out, so the timer only ever fires for what the
+        stream has not delivered; a stream that goes quiet costs nothing,
+        because the deadlines expire on their own and polling resumes at
+        exactly the interval that was asked for.
+        """
         device_ids = self._tracked_device_ids()
         if not device_ids:
             return DEFAULT_POLLING_INTERVAL_SECONDS
 
-        if self._push_connected:
-            # Events carry the changes; polling stays on only as a safety net
-            # in case the stream dies quietly.
-            return PUSH_KEEPALIVE_POLL_SECONDS
-
-        enabled_intervals = [
-            self.device_polling_interval(device_id)
+        enabled_ids = [
+            device_id
             for device_id in device_ids
             if self.device_polling_enabled(device_id)
         ]
-        if not enabled_intervals:
+        if not enabled_ids:
             return None
-        return min(enabled_intervals)
+
+        deadlines: list[float] = []
+        for device_id in enabled_ids:
+            deadline = self._staleness_deadline(device_id)
+            if deadline is None:
+                # Nothing has been read yet, so there is no deadline to work
+                # from; run at the configured rate until there is one.
+                return min(
+                    self.device_polling_interval(other_id) for other_id in enabled_ids
+                )
+            deadlines.append(deadline)
+
+        return max(MIN_POLL_SCHEDULE_SECONDS, min(deadlines) - monotonic())
 
     def _tracked_device_ids(self) -> tuple[str, ...]:
         if self._device_catalog:
@@ -1043,10 +1123,10 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
             return True
         if not self.device_polling_enabled(device_id):
             return False
-        last_polled_at = self._device_last_polled_at.get(device_id)
-        if last_polled_at is None:
+        deadline = self._staleness_deadline(device_id)
+        if deadline is None:
             return True
-        return (now - last_polled_at) >= self.device_polling_interval(device_id)
+        return now >= deadline
 
 
 def _device_to_payload(device: Device) -> dict[str, Any]:

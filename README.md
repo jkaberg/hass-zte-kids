@@ -41,6 +41,29 @@ Configuration is UI-only via the Home Assistant config flow.
 > [!TIP]
 > If authentication fails, verify the username and password first. If those are correct, retry from the app and check whether the account is being forced through a captcha challenge.
 
+## How data stays fresh
+
+Two paths deliver state: an HTTP poll, which reads everything, and an optional
+real-time event stream from the vendor's broker, which only ever carries a
+position fix or a battery level.
+
+The polling interval is a promise about **how old data may get**, not how often
+a request is sent. Each watch tracks when its position, battery and remaining
+status were last current; whichever goes stale first triggers a poll. An event
+that delivers a fix satisfies the position deadline and defers the request, so
+a working stream means fewer HTTP calls and fresher positions, while a stream
+that goes quiet costs nothing — the deadlines expire on their own and polling
+resumes at exactly the configured rate.
+
+Being connected to the broker earns no reduction on its own. A broker can
+accept a connection and then send nothing, and only data that has actually
+arrived is allowed to move a deadline. Config, step totals and unread counts
+are never pushed, so a poll still runs at least every 30 minutes (or the
+configured interval, if that is longer) to keep them current.
+
+Real-time push can be turned off in the integration's options without losing
+anything; polling alone then meets the same deadlines.
+
 ## Available entities
 
 Each watch on the account becomes one Home Assistant device with around 27
@@ -112,7 +135,7 @@ rate limited, so a script can set several in a row.
 | `switch` Shutdown protection | Requires a code on the watch before it powers off. |
 | `switch` Task reminder | |
 | `number` Step goal | Daily step target. |
-| `number` Polling interval, `switch` Polling enabled | Per-watch polling, 5 to 60 minutes. |
+| `number` Polling interval, `switch` Polling enabled | Per-watch freshness, 5 to 60 minutes. See [How data stays fresh](#how-data-stays-fresh). |
 
 Five permission switches (location, battery, SMS, activity, app management) are
 also created as diagnostic entities, disabled by default. They gate whole

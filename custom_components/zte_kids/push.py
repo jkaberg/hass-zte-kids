@@ -13,7 +13,13 @@ from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant, callback
 
-from .const import PUSH_CONNECT_TIMEOUT_SECONDS, EVENT_MESSAGE, EVENT_SAFE_ZONE
+from .const import (
+    EVENT_MESSAGE,
+    EVENT_SAFE_ZONE,
+    FACET_BATTERY,
+    FACET_LOCATION,
+    PUSH_CONNECT_TIMEOUT_SECONDS,
+)
 from .sdk.models import DeviceLocation
 from .sdk.mqtt import MqttBridge, MqttEvent, build_topics
 
@@ -81,9 +87,9 @@ class ZTEKidsPushManager:
         await self.hass.async_add_executor_job(bridge.start, topics)
         self._bridge = bridge
 
-        # Give the broker a moment to answer. If it does not, polling simply
-        # stays at its normal rate and paho keeps retrying underneath; the
-        # cadence drops only once the stream is genuinely up.
+        # Give the broker a moment to answer. Nothing rides on the outcome -
+        # paho keeps retrying underneath, and polling is driven by how old the
+        # data is, not by whether this socket came up.
         connected = await self.hass.async_add_executor_job(
             bridge.wait_connected, PUSH_CONNECT_TIMEOUT_SECONDS
         )
@@ -144,7 +150,9 @@ class ZTEKidsPushManager:
         if location is None:
             return
         self.coordinator.async_apply_push_snapshot(
-            event.device_id, replace(snapshot, location=location)
+            event.device_id,
+            replace(snapshot, location=location),
+            facets=(FACET_LOCATION,),
         )
 
     def _apply_battery(self, event: MqttEvent) -> None:
@@ -161,7 +169,9 @@ class ZTEKidsPushManager:
         except (TypeError, ValueError):
             return
         self.coordinator.async_apply_push_snapshot(
-            event.device_id, replace(snapshot, battery=battery)
+            event.device_id,
+            replace(snapshot, battery=battery),
+            facets=(FACET_BATTERY,),
         )
 
     def _snapshot(self, event: MqttEvent):

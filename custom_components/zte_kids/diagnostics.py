@@ -57,6 +57,7 @@ async def async_get_config_entry_diagnostics(
             "capabilities": asdict(coordinator.device_capabilities(device_id)),
             "polling_enabled": coordinator.device_polling_enabled(device_id),
             "polling_interval": coordinator.device_polling_interval(device_id),
+            "freshness_seconds": coordinator.facet_ages(device_id),
             "raw": async_redact_data(snapshot.raw, TO_REDACT),
             "config": async_redact_data(snapshot.config, TO_REDACT),
         }
@@ -69,6 +70,7 @@ async def async_get_config_entry_diagnostics(
             else None
         ),
         "last_update_success": coordinator.last_update_success,
+        "push_connected": coordinator.push_connected,
         "device_count": len(data.devices),
         "devices": devices,
     }

@@ -25,6 +25,26 @@ DEVICE_POLLING_INTERVAL_MIN_SECONDS = 300
 DEVICE_POLLING_INTERVAL_MAX_SECONDS = 3600
 DEFAULT_DEVICE_POLLING_ENABLED = True
 
+# Freshness is tracked per facet, because the two paths that deliver it cover
+# different ground: a poll reads everything, while the event stream only ever
+# carries a position fix or a battery level. Giving each facet its own clock
+# is what stops a chatty location stream from suppressing polling altogether
+# and quietly freezing the fields no event ever mentions.
+FACET_LOCATION = "location"
+FACET_BATTERY = "battery"
+FACET_STATUS = "status"
+FRESHNESS_FACETS = (FACET_LOCATION, FACET_BATTERY, FACET_STATUS)
+
+# The status facet - device config, step totals, unread counts - is only ever
+# satisfied by a poll. It tolerates being older than a position fix, so it
+# gets its own, slower deadline, and is never allowed to run faster than the
+# interval the user asked for.
+STATUS_REFRESH_SECONDS = 1800
+
+# Floor on how soon the next poll may be scheduled, so a deadline that is
+# nearly due cannot turn a burst of events into a burst of requests.
+MIN_POLL_SCHEDULE_SECONDS = 30
+
 # Minimum spacing between commands sent to the same watch. The upstream rate
 # limits are undocumented, and these commands ring, reboot or power off a
 # device a child is wearing, so repeats are rejected rather than queued.
@@ -59,14 +79,9 @@ DEFAULT_ENABLE_PUSH = True
 
 # How long to wait for the broker to acknowledge a connection before carrying
 # on. Missing the deadline is not a failure - paho keeps retrying in the
-# background - it just means polling stays at full rate until the stream is
-# actually up.
+# background - and it costs nothing either way, because a connection that has
+# not delivered anything buys no reduction in polling.
 PUSH_CONNECT_TIMEOUT_SECONDS = 5.0
-
-# While the event stream is up, polling continues at this slower cadence as a
-# safety net: the broker is a third-party service that can go quiet without
-# telling us, and a silent stream must not look like a stationary child.
-PUSH_KEEPALIVE_POLL_SECONDS = 3600
 
 # Bus events for push traffic that has no entity to live in.
 EVENT_MESSAGE = f"{DOMAIN}_message"
