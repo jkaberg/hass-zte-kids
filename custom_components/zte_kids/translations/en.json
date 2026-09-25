@@ -179,6 +179,10 @@
       "name": "Set SOS numbers",
       "description": "Replaces the numbers the watch calls when the SOS button is held. The watch stores all three together, so this is a single change; leave a number out to keep what it is now.",
       "fields": {
+        "device_id": {
+          "name": "Watch",
+          "description": "The watch or watches to change."
+        },
         "number_1": {
           "name": "First number",
           "description": "Called first."
@@ -197,6 +201,10 @@
       "name": "Set power-off schedule",
       "description": "Sets the window in which the watch powers itself down, in the watch's own local time. The switch and both ends are written together.",
       "fields": {
+        "device_id": {
+          "name": "Watch",
+          "description": "The watch or watches to change."
+        },
         "enabled": {
           "name": "Enabled",
           "description": "Whether the watch observes the window."
@@ -215,6 +223,10 @@
       "name": "Set shutdown protection",
       "description": "Requires a 4-digit code on the watch before it will power off. The setting and the code are stored together.",
       "fields": {
+        "device_id": {
+          "name": "Watch",
+          "description": "The watch or watches to change."
+        },
         "enabled": {
           "name": "Enabled",
           "description": "Whether the code is required."
@@ -229,6 +241,10 @@
       "name": "Set task reminder",
       "description": "Sets when the watch reminds the child about their tasks.",
       "fields": {
+        "device_id": {
+          "name": "Watch",
+          "description": "The watch or watches to change."
+        },
         "enabled": {
           "name": "Enabled",
           "description": "Whether the reminder runs."
@@ -243,6 +259,10 @@
       "name": "Set watch permissions",
       "description": "Turns whole features on or off on the watch itself. Most people never need this; turning location off stops the watch reporting where it is.",
       "fields": {
+        "device_id": {
+          "name": "Watch",
+          "description": "The watch or watches to change."
+        },
         "location": {
           "name": "Location",
           "description": "Whether the watch reports its position."

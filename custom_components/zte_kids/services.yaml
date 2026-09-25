@@ -1,8 +1,11 @@
 set_sos_numbers:
-  target:
-    device:
-      integration: zte_kids
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zte_kids
+          multiple: true
     number_1:
       selector: { text: { type: tel } }
       example: "+4790000000"
@@ -12,10 +15,13 @@ set_sos_numbers:
       selector: { text: { type: tel } }
 
 set_power_off_schedule:
-  target:
-    device:
-      integration: zte_kids
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zte_kids
+          multiple: true
     enabled:
       selector: { boolean: }
     start_time:
@@ -26,10 +32,13 @@ set_power_off_schedule:
       example: "06:30:00"
 
 set_shutdown_protection:
-  target:
-    device:
-      integration: zte_kids
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zte_kids
+          multiple: true
     enabled:
       selector: { boolean: }
     password:
@@ -37,10 +46,13 @@ set_shutdown_protection:
       example: "1234"
 
 set_task_reminder:
-  target:
-    device:
-      integration: zte_kids
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zte_kids
+          multiple: true
     enabled:
       selector: { boolean: }
     time:
@@ -48,10 +60,13 @@ set_task_reminder:
       example: "17:00:00"
 
 set_permissions:
-  target:
-    device:
-      integration: zte_kids
   fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zte_kids
+          multiple: true
     location:
       selector: { boolean: }
     battery:
