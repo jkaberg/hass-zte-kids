@@ -1,5 +1,12 @@
 # ZTE Kids Integration for Home Assistant
 
+[![GitHub Release](https://img.shields.io/github/v/release/jkaberg/hass-zte-kids)](https://github.com/jkaberg/hass-zte-kids/releases/latest)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![Validate](https://github.com/jkaberg/hass-zte-kids/actions/workflows/validate.yml/badge.svg)](https://github.com/jkaberg/hass-zte-kids/actions/workflows/validate.yml)
+[![Quality](https://github.com/jkaberg/hass-zte-kids/actions/workflows/quality.yml/badge.svg)](https://github.com/jkaberg/hass-zte-kids/actions/workflows/quality.yml)
+[![License](https://img.shields.io/github/license/jkaberg/hass-zte-kids)](LICENSE)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/jkaberg)
+
 Home Assistant custom integration for ZTE Kids watches.
 
 ## Installation
