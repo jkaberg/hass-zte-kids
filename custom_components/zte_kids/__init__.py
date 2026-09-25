@@ -25,6 +25,9 @@ class RuntimeData:
     client: ZTEKidsClient
     coordinator: ZTEKidsDataUpdateCoordinator
     push: Any = None
+    #: The push setting as last applied, so an options change can be told
+    #: apart from a save that left it alone.
+    push_enabled: bool = False
 
 
 if TYPE_CHECKING:
@@ -100,7 +103,9 @@ async def _async_start_push(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> N
     """
     from .const import CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH
 
-    if not entry.options.get(CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH):
+    enabled = entry.options.get(CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH)
+    entry.runtime_data.push_enabled = enabled
+    if not enabled:
         return
 
     from .push import ZTEKidsPushManager
@@ -119,7 +124,35 @@ async def _async_start_push(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> N
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> None:
-    await hass.config_entries.async_reload(entry.entry_id)
+    """Apply changed options in place instead of rebuilding the entry.
+
+    The polling number and switch write their setting straight into the entry
+    options, so reloading here would take every entity unavailable for the
+    length of a full setup - a fresh login included - to land a change the
+    coordinator can apply live. Only the event stream owns anything that has
+    to be built or torn down, and it can be started and stopped on its own.
+    """
+    from .const import CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH
+
+    runtime_data = entry.runtime_data
+    runtime_data.coordinator.async_options_updated()
+
+    enabled = entry.options.get(CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH)
+    if enabled == runtime_data.push_enabled:
+        # Only the polling settings moved. Deliberately not a reconnect hook:
+        # a stream that failed to open is paho's to retry, not something a
+        # nudge of the polling interval should go and poke.
+        return
+
+    if enabled:
+        await _async_start_push(hass, entry)
+        return
+
+    runtime_data.push_enabled = False
+    if runtime_data.push is not None:
+        await runtime_data.push.async_stop()
+        runtime_data.push = None
+        runtime_data.coordinator.async_set_push_connected(False)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ZTEKidsConfigEntry) -> bool:

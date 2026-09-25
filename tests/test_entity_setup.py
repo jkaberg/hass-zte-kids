@@ -409,3 +409,44 @@ async def test_sos_and_permissions_can_be_read_before_they_are_written(hass) -> 
 
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+@pytest.mark.asyncio
+async def test_toggling_polling_does_not_take_the_entities_away(hass) -> None:
+    """Changing a polling setting must not reload the entry.
+
+    The polling switch and number write into the entry options, so a listener
+    that reloads on any options change turns a local setting into a full
+    teardown: every entity drops to unavailable and the account is logged in
+    again, for a change the coordinator can apply where it stands.
+    """
+    client = _client()
+    entry = await _setup(hass, client)
+    coordinator = entry.runtime_data.coordinator
+    logins = client.auth.login.await_count
+
+    states: list[str] = []
+    hass.bus.async_listen(
+        "state_changed",
+        lambda event: states.append(event.data["new_state"].state)
+        if event.data["entity_id"] == "sensor.watch_1_battery"
+        and event.data["new_state"] is not None
+        else None,
+    )
+
+    await hass.services.async_call(
+        "switch",
+        "turn_off",
+        {"entity_id": "switch.watch_1_polling_enabled"},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    assert hass.states.get("switch.watch_1_polling_enabled").state == "off"
+    assert "unavailable" not in states
+    # Same coordinator, no second login: the entry was never rebuilt.
+    assert entry.runtime_data.coordinator is coordinator
+    assert client.auth.login.await_count == logins
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()

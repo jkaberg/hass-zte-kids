@@ -1010,6 +1010,17 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
         return options
 
     @callback
+    def async_options_updated(self) -> None:
+        """Re-read the entry options after something changed them.
+
+        Rescheduling is idempotent because the interval is derived from the
+        deadlines rather than from when the last poll happened, so it is safe
+        that the polling entities also apply their own change directly.
+        """
+        self._reschedule_polling()
+        self.async_update_listeners()
+
+    @callback
     def _update_polling_interval(self) -> None:
         interval_seconds = self._polling_update_interval_seconds()
         self.update_interval = (
