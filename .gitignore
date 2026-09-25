@@ -210,6 +210,5 @@ __marimo__/
 # Local 
 *.egg*
 decompiled/
-tests/
 scripts/
 androguard*
