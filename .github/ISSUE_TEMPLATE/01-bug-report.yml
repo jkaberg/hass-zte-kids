@@ -1,0 +1,79 @@
+name: Bug report
+description: File a bug report.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, check that the ZTE Kids app behaves as you expect. The integration talks to the same cloud API as the app, so if the app shows the same problem it's on ZTE's side.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen.
+      placeholder: Tell us what you see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Trigger ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: home-assistant-version
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.x.x
+    validations:
+      required: true
+
+  - type: input
+    id: integration-version
+    attributes:
+      label: Integration version
+      placeholder: Version from HACS or manifest
+    validations:
+      required: true
+
+  - type: input
+    id: watch-model
+    attributes:
+      label: Watch model and firmware
+      placeholder: "Model from the device page, firmware from the update entity"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: push
+    attributes:
+      label: Real-time updates
+      description: The "Real-time updates" option on the integration.
+      options:
+        - Enabled
+        - Disabled
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevant-log-output
+    attributes:
+      label: Relevant log output
+      description: |
+        Please paste relevant **debug** logs, or the output of **Download diagnostics** on the integration entry. Both are redacted, however check for anything personal before posting.
+        To enable debug logging, see [Debug logging](https://github.com/jkaberg/hass-zte-kids#debug-logging).
+
+        ⚠️ Issues without valid debug logs will be automatically closed.
+      placeholder: |
+        2026-03-02 12:00:00.123 DEBUG (MainThread) [custom_components.zte_kids.coordinator] ...
+      render: shell
+    validations:
+      required: true

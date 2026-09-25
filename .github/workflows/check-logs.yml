@@ -1,0 +1,142 @@
+name: Check debug logs in bug reports
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  check-logs:
+    if: contains(github.event.issue.labels.*.name, 'bug')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Validate debug logs
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            const LABEL = 'needs-info';
+            const hasLabel = issue.labels.some(l => l.name === LABEL);
+
+            // --- Extract log section from GitHub forms markdown ---
+            // GitHub forms render each field under "### {label}" headings.
+            const logHeading = '### Relevant log output';
+            const idx = body.indexOf(logHeading);
+            let logContent = '';
+            if (idx !== -1) {
+              const afterHeading = body.substring(idx + logHeading.length);
+              const nextSection = afterHeading.indexOf('\n### ');
+              logContent = nextSection !== -1
+                ? afterHeading.substring(0, nextSection)
+                : afterHeading;
+            }
+
+            // Strip markdown code fences and whitespace
+            logContent = logContent
+              .replace(/```[a-z]*\n?/g, '')
+              .replace(/```/g, '')
+              .replace(/_No response_/gi, '')
+              .trim();
+
+            // --- Validate log content ---
+            const patterns = [
+              /\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/,          // HA timestamp
+              /\b(DEBUG|WARNING|ERROR|INFO)\b/,                    // Log level keywords
+              /custom_components\.zte_kids/,                        // Integration loggers
+              /"(push_connected|device_count|last_update_success)"/, // Download diagnostics
+              /\bTraceback\b/,                                     // Python traceback
+              /\bHomeAssistant\b/i,                                // HA references
+            ];
+
+            const hasValidPattern = patterns.some(p => p.test(logContent));
+            const hasMinLength = logContent.length >= 50;
+            const isValid = hasValidPattern && hasMinLength;
+
+            // --- Act on validation result ---
+            if (!isValid) {
+              // Only act once — skip if already labelled and issue is closed
+              if (issue.state === 'closed' && hasLabel) {
+                core.info(`Issue already closed with ${LABEL} label, skipping.`);
+                return;
+              }
+
+              // Ensure the label exists in the repo
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: LABEL,
+                });
+              } catch {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: LABEL,
+                  color: 'fbca04',
+                  description: 'Waiting on the reporter for logs or details',
+                });
+              }
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: [LABEL],
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  'This issue was automatically closed because no valid debug logs were detected in the **Relevant log output** section.',
+                  '',
+                  'To help us investigate, please:',
+                  '1. Enable debug logging by following [these instructions](https://github.com/jkaberg/hass-zte-kids#debug-logging)',
+                  '2. Reproduce the issue',
+                  '3. Edit this issue and paste the relevant debug logs, or the output of **Download diagnostics**',
+                  '',
+                  'The issue will be **automatically reopened** once valid logs are added.',
+                ].join('\n'),
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned',
+              });
+
+              core.info(`Issue #${issue.number} closed — missing debug logs.`);
+
+            } else if (hasLabel) {
+              // Valid logs detected on an edit — reopen
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                name: LABEL,
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'open',
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: 'Debug logs detected — reopening this issue. Thank you!',
+              });
+
+              core.info(`Issue #${issue.number} reopened — valid logs added.`);
+
+            } else {
+              core.info(`Issue #${issue.number} has valid logs, no action needed.`);
+            }
