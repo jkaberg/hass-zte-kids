@@ -49,7 +49,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          # compat mode puts the repo on sys.path directly - HA's loader
+          # can't find custom_components through setuptools' finder hook
+          python -m pip install -e ".[dev]" --config-settings editable_mode=compat
 
       - name: Run pytest
         run: pytest -q tests
