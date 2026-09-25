@@ -18,12 +18,14 @@ class Device:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Device":
+    def from_payload(cls, payload: dict[str, Any]) -> Device:
         device_id = _first_present(payload, "imei", "deviceId", "id")
         return cls(
             device_id=str(device_id or ""),
             openid=payload.get("openid"),
-            name=payload.get("deviceDefaultName") or payload.get("name") or payload.get("device_name"),
+            name=payload.get("deviceDefaultName")
+            or payload.get("name")
+            or payload.get("device_name"),
             relationship=payload.get("relationship"),
             model=payload.get("model"),
             group_id=payload.get("groupid"),
@@ -44,7 +46,7 @@ class DeviceLocation:
     loc_type: str | None = None
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "DeviceLocation" | None:
+    def from_payload(cls, payload: dict[str, Any]) -> DeviceLocation | None:
         lat = _first_present(payload, "lat", "latitude")
         lon = _first_present(payload, "lon", "longitude")
         if lat is None or lon is None:
@@ -71,7 +73,7 @@ class DeviceSnapshot:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "DeviceSnapshot":
+    def from_payload(cls, payload: dict[str, Any]) -> DeviceSnapshot:
         battery_payload = _mapping_or_none(payload.get("battery"))
         location_payload = _mapping_or_none(payload.get("lastLocation")) or _mapping_or_none(
             payload.get("location")

@@ -28,7 +28,7 @@ class ChatSession:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "ChatSession":
+    def from_payload(cls, payload: Mapping[str, Any]) -> ChatSession:
         return cls(
             chat_id=payload.get("chatID"),
             chat_type=_coerce_int(payload.get("chatType")),

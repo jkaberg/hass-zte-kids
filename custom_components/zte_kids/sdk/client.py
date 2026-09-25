@@ -45,7 +45,9 @@ CaptchaSolver = Callable[[CaptchaChallenge], Awaitable[CaptchaAnswer | None]]
 
 
 class AuthAPI:
-    def __init__(self, transport: SignedAsyncTransport, codec: PasswordCodec, platform: PlatformMetadata) -> None:
+    def __init__(
+        self, transport: SignedAsyncTransport, codec: PasswordCodec, platform: PlatformMetadata
+    ) -> None:
         self._transport = transport
         self._codec = codec
         self._platform = platform
@@ -504,12 +506,16 @@ class ZTEKidsClient:
     async def aclose(self) -> None:
         await self.transport.aclose()
 
-    async def bootstrap_account_state(self, credentials: Credentials) -> tuple[Session, AccountProfile, list[DeviceSnapshot]]:
+    async def bootstrap_account_state(
+        self, credentials: Credentials
+    ) -> tuple[Session, AccountProfile, list[DeviceSnapshot]]:
         session = await self.auth.login(credentials)
         profile = await self.auth.query_profile(session)
         devices = await self.devices.list_related_devices(session)
         snapshots = [
-            DeviceSnapshot.from_payload(device.raw or {"imei": device.device_id, "name": device.name})
+            DeviceSnapshot.from_payload(
+                device.raw or {"imei": device.device_id, "name": device.name}
+            )
             for device in devices
             if device.device_id
         ]

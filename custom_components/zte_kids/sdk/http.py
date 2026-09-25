@@ -189,7 +189,9 @@ class SignedAsyncTransport:
         return merged
 
     @staticmethod
-    def _multipart_to_httpx(fields: Mapping[str, object] | None) -> list[tuple[str, tuple[None, str]]] | None:
+    def _multipart_to_httpx(
+        fields: Mapping[str, object] | None,
+    ) -> list[tuple[str, tuple[None, str]]] | None:
         if fields is None:
             return None
         return [(key, (None, str(value))) for key, value in fields.items()]
@@ -202,7 +204,9 @@ class SignedAsyncTransport:
         code = payload.get("code")
         message = payload.get("msg")
         if code == 1002:
-            raise SessionExpiredError(code=code, message=message or "Session expired", payload=payload)
+            raise SessionExpiredError(
+                code=code, message=message or "Session expired", payload=payload
+            )
         if code == 2160:
             raise CaptchaAnswerIncorrectError(
                 code=code,

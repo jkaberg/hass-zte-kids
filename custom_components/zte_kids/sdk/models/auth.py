@@ -25,7 +25,7 @@ class CaptchaChallenge:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "CaptchaChallenge":
+    def from_payload(cls, payload: dict[str, Any]) -> CaptchaChallenge:
         return cls(
             kid=str(payload.get("kid", "")),
             big_img=payload.get("bigImg"),
@@ -44,7 +44,7 @@ class Session:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "Session":
+    def from_payload(cls, payload: dict[str, Any]) -> Session:
         return cls(
             access_token=str(payload.get("accesstoken", "")),
             openid=str(payload.get("openid", "")),
@@ -67,7 +67,7 @@ class AccountProfile:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: dict[str, Any]) -> "AccountProfile":
+    def from_payload(cls, payload: dict[str, Any]) -> AccountProfile:
         return cls(
             openid=str(payload.get("openid", "")),
             name=payload.get("name") or payload.get("userName"),
@@ -75,7 +75,9 @@ class AccountProfile:
             email=payload.get("email"),
             avatar=payload.get("avator") or payload.get("avatar"),
             group_id=payload.get("groupid"),
-            account_status=_coerce_int(payload.get("accountStatus") or payload.get("account_status")),
+            account_status=_coerce_int(
+                payload.get("accountStatus") or payload.get("account_status")
+            ),
             status=_coerce_int(payload.get("status")),
             raw=payload,
         )

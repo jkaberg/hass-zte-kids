@@ -4,17 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hass-zte-kids"
-version = "0.1.0"
+version = "0.5.0"
 description = "Home Assistant integration for ZTE Kids."
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
-  {name = "GitHub Copilot"},
+  {name = "Joel Kåberg"},
 ]
 dependencies = [
-  "cryptography>=46,<47",
+  "cryptography>=44",
   "httpx>=0.27,<1",
+  "paho-mqtt>=1.6",
 ]
 
 [project.optional-dependencies]
@@ -22,7 +23,7 @@ dev = [
   "pytest>=8,<9",
   "pytest-asyncio>=0.24,<0.25",
   "pytest-homeassistant-custom-component>=0.13,<0.14",
-  "ruff>=0.11,<0.12",
+  "ruff==0.16.4",
 ]
 
 [tool.setuptools]
@@ -39,6 +40,14 @@ namespaces = true
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
+known-first-party = ["custom_components"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

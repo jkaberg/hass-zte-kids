@@ -54,7 +54,7 @@ class DeviceCapabilities:
     identity: str | None = None
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any] | None) -> "DeviceCapabilities":
+    def from_payload(cls, payload: Mapping[str, Any] | None) -> DeviceCapabilities:
         if not isinstance(payload, Mapping):
             return cls()
 
@@ -95,7 +95,7 @@ class ShutdownProtection:
     password: str | None = None
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any] | None) -> "ShutdownProtection":
+    def from_payload(cls, payload: Mapping[str, Any] | None) -> ShutdownProtection:
         if not isinstance(payload, Mapping):
             return cls()
         return cls(
@@ -109,7 +109,7 @@ class SosNumbers:
     numbers: tuple[str | None, str | None, str | None] = (None, None, None)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any] | None) -> "SosNumbers":
+    def from_payload(cls, payload: Mapping[str, Any] | None) -> SosNumbers:
         if not isinstance(payload, Mapping):
             return cls()
         return cls(
@@ -134,7 +134,7 @@ class TaskReminder:
     time: str | None = None
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any] | None) -> "TaskReminder":
+    def from_payload(cls, payload: Mapping[str, Any] | None) -> TaskReminder:
         if not isinstance(payload, Mapping):
             return cls()
         return cls(
@@ -173,7 +173,7 @@ class DeviceConfig:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any] | None) -> "DeviceConfig":
+    def from_payload(cls, payload: Mapping[str, Any] | None) -> DeviceConfig:
         if not isinstance(payload, Mapping):
             return cls()
 

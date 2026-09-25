@@ -34,8 +34,7 @@ from .const import (
     SLOW_REFRESH_SECONDS,
     STATUS_REFRESH_SECONDS,
 )
-from .sdk import APIError, SessionExpiredError, ZTEKidsClient
-from .sdk import commands
+from .sdk import APIError, SessionExpiredError, ZTEKidsClient, commands
 from .sdk.commands import Command
 from .sdk.models import (
     AccountProfile,
@@ -154,7 +153,9 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
             self._force_refresh = True
             await self.async_request_refresh()
 
-    async def async_set_device_polling_interval(self, device_id: str, interval_seconds: int) -> None:
+    async def async_set_device_polling_interval(
+        self, device_id: str, interval_seconds: int
+    ) -> None:
         self.hass.config_entries.async_update_entry(
             self.config_entry,
             options=self._updated_device_polling_options(
@@ -988,7 +989,9 @@ class ZTEKidsDataUpdateCoordinator(DataUpdateCoordinator[CoordinatorData]):
     ) -> dict[str, Any]:
         options = dict(self.config_entry.options)
         device_polling = options.get(CONF_DEVICE_POLLING, {})
-        normalized_device_polling = dict(device_polling) if isinstance(device_polling, Mapping) else {}
+        normalized_device_polling = (
+            dict(device_polling) if isinstance(device_polling, Mapping) else {}
+        )
         current_options = normalized_device_polling.get(device_id, {})
         normalized_device_options = (
             dict(current_options) if isinstance(current_options, Mapping) else {}

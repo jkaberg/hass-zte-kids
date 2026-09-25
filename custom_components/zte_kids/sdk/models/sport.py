@@ -22,7 +22,7 @@ class SportSummary:
     goal: int | None = None
 
     @classmethod
-    def from_rows(cls, rows: list[Mapping[str, Any]]) -> "SportSummary":
+    def from_rows(cls, rows: list[Mapping[str, Any]]) -> SportSummary:
         if not rows:
             return cls()
 
@@ -42,7 +42,7 @@ class SportSummary:
             calories=_coerce_float(_first(latest, "totalCalorie", "calorie")),
         )
 
-    def with_goal(self, goal: int | None) -> "SportSummary":
+    def with_goal(self, goal: int | None) -> SportSummary:
         if goal is None:
             return self
         return SportSummary(

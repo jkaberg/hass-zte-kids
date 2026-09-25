@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.httpx_client import get_async_client
+import voluptuous as vol
 
 from .const import CONF_ENABLE_PUSH, DEFAULT_ENABLE_PUSH, DOMAIN
 from .sdk import Environment, ZTEKidsClient
@@ -23,7 +22,7 @@ class ZTEKidsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
-    ) -> "ZTEKidsOptionsFlow":
+    ) -> ZTEKidsOptionsFlow:
         return ZTEKidsOptionsFlow()
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:

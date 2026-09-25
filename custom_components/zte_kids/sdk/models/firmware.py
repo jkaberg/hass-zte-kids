@@ -16,7 +16,7 @@ class FirmwareInfo:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any] | None) -> "FirmwareInfo":
+    def from_payload(cls, payload: Mapping[str, Any] | None) -> FirmwareInfo:
         if not isinstance(payload, Mapping):
             return cls()
         return cls(

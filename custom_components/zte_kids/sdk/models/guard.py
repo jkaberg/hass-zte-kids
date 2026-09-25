@@ -39,7 +39,7 @@ class GuardRule:
     raw: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "GuardRule | None":
+    def from_payload(cls, payload: Mapping[str, Any]) -> GuardRule | None:
         rule_id = payload.get("securityGuardId")
         if not rule_id:
             return None

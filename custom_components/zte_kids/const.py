@@ -9,15 +9,15 @@ CONF_DEVICE_POLLING = "device_polling"
 CONF_POLLING_ENABLED = "enabled"
 CONF_POLLING_INTERVAL = "interval_seconds"
 PLATFORMS: list[Platform] = [
-	Platform.SENSOR,
-	Platform.BINARY_SENSOR,
-	Platform.DEVICE_TRACKER,
-	Platform.UPDATE,
-	Platform.NOTIFY,
-	Platform.NUMBER,
-	Platform.SELECT,
-	Platform.SWITCH,
-	Platform.BUTTON,
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.DEVICE_TRACKER,
+    Platform.UPDATE,
+    Platform.NOTIFY,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SWITCH,
+    Platform.BUTTON,
 ]
 DEFAULT_POLLING_INTERVAL = timedelta(minutes=30)
 DEFAULT_POLLING_INTERVAL_SECONDS = 1800

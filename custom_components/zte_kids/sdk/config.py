@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 import locale
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     PRODUCTION = "production"
 
 
@@ -46,7 +46,7 @@ class PlatformMetadata:
     release: str = "13"
 
     @classmethod
-    def current(cls) -> "PlatformMetadata":
+    def current(cls) -> PlatformMetadata:
         return cls()
 
     @property
