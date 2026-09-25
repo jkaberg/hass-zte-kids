@@ -16,11 +16,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
       - name: HACS validation
         uses: hacs/action@main
         with:
           category: integration
-          ignore: description issues topics
 
   hassfest:
     name: Hassfest
@@ -28,7 +30,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run hassfest
         uses: home-assistant/actions/hassfest@master

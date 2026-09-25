@@ -14,8 +14,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out tag
+        uses: actions/checkout@v7
+
+      # HACS shows the tag, HA shows the manifest - they have to agree
+      - name: Check manifest version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest=$(jq -r .version custom_components/zte_kids/manifest.json)
+          if [ "$tag" != "$manifest" ]; then
+            echo "::error file=custom_components/zte_kids/manifest.json::manifest version $manifest does not match tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
